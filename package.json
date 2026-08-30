@@ -1,0 +1,28 @@
+{
+  "name": "molstartpy",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react-swc": "^4.3.3",
+    "sass-embedded": "^1.103.1",
+    "vite": "^8.2.2",
+    "vite-plugin-node-polyfills": "^0.28.0",
+    "vite-plugin-static-copy": "^4.1.1"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "fp-ts": "^2.16.11",
+    "itertools": "^2.7.1",
+    "molstar": "^5.11.0",
+    "monaco-editor": "^0.56.0",
+    "pyodide": "^314.0.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}

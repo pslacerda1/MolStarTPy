@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "target": "esnext",
+        "moduleResolution": "bundler", // ou "node"
+        "jsx": "react-jsx",
+        "esModuleInterop": true
+    },
+    "include": [
+        "src"
+    ]
+}
