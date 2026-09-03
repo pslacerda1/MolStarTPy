@@ -1,18 +1,128 @@
 import { TMAlign } from 'molstar/lib/mol-math/linear-algebra/3d/tm-align'
 import * as loaders from 'molstar/lib/extensions/plugin/loaders';
-import { ArrayTrajectory, Coordinates, Model, Structure } from 'molstar/lib/mol-model/structure';
 import {
     QueryContext,
     StructureSelection,
-    StructureElement,
     StructureProperties
 } from 'molstar/lib/mol-model/structure';
 import { atoms } from 'molstar/lib/mol-model/structure/query/queries/generators';
 
+import { ArrayTrajectory, Structure } from 'molstar/lib/mol-model/structure';
+import {
+    StructureElement,
+} from 'molstar/lib/mol-model/structure';
 
-import { getMolstar } from '../../App';
 import { OrderedSet } from 'molstar/lib/mol-data/int';
-import { Vec3 } from 'molstar/lib/mol-math/linear-algebra';
+
+import { PythonEnvironment } from '../PythonEnvironment/environment';
+import { intoPythonFromMain } from '../PythonEnvironment/main';
+import { getMolstar } from '../../App';
+import { Logger } from '../../utils';
+
+
+const python = PythonEnvironment('main');
+
+const log = Logger();
+
+
+/**
+ * Load a PDB record into a model.
+ */
+export const loadPdb = intoPythonFromMain('loadPdb',
+    async function (pdbId: string) {
+        log.debug(`Loading PDB ${pdbId}...`);
+        await loaders.loadPdb(getMolstar(), pdbId);
+    }
+);
+
+
+intoPythonFromMain('script01',
+    async function (pdbList: string[]=['1BZL', '2JK6', '5SMJ']) {
+        for (const pdb of pdbList) {
+            await loadPdb(pdb);
+        }
+        return await tmAlignMatrix(pdbList);
+    }
+);
+
+
+/**
+ * Align many models .
+ */
+export const tmAlignMatrix = intoPythonFromMain('tmAlignMatrix',
+    async function (modelLabels: string[]) {
+
+        /**
+         * Insane Mol* query system.
+         */
+        const query = atoms({
+            atomTest: ctx => {
+                const atom = StructureProperties.atom.auth_atom_id(ctx.element);
+                return atom == 'CA';
+            }
+        });
+        /**
+         * Lets compare both methods.
+         */
+        const rmsdMatMolstar: number[] = [];
+        const rmsdMatTmtools: number[] = [];
+
+        for (const [label1, label2] of combinations(modelLabels, 2)) {
+            const struct1 = findStructure(label1);
+            const loci1 = StructureSelection.toLociWithCurrentUnits(
+                query(new QueryContext(struct1))
+            );
+            const [coords1, seq1] = getAtomData(loci1);
+
+            const struct2 = findStructure(label2);
+            const loci2 = StructureSelection.toLociWithCurrentUnits(
+                query(new QueryContext(struct2))
+            );
+            const [coords2, seq2] = getAtomData(loci2);
+
+            // lets...
+            const resultMs = TMAlign.compute({
+                a: coords1,
+                b: coords2,
+                seqA: seq1,
+                seqB: seq2
+            });
+            rmsdMatMolstar.push(resultMs.rmsd);
+
+            // ...go!
+            const resultTm: any = await python.callWorkerFunction(
+                'MolstarScripts.tmtools_align',
+                [coords1, coords2, seq1, seq2]
+            );
+            rmsdMatTmtools.push(resultTm['rmsd']);
+        }
+
+        /**
+         * Just for fun!
+         */
+        const matrixMs = await python.callWorkerFunction(
+            'scipy.spatial.distance.squareform',
+            [rmsdMatMolstar]
+        );
+        await python.callWorkerFunction(
+            'builtins.print',
+            ['Mol*', matrixMs]
+        )
+
+        const matrixTm = await python.callWorkerFunction(
+            'scipy.spatial.distance.squareform',
+            [rmsdMatTmtools]
+        );
+        await python.callWorkerFunction(
+            'builtins.print',
+            ['tmtools', matrixTm]
+        )
+        return rmsdMatMolstar;
+    }
+);
+
+
+
 
 /**
  * Get stuff from Mol*.
@@ -60,7 +170,6 @@ export function getAtomData(loci: StructureElement.Loci): AtomData {
             coords.x.push(x(loc));
             coords.y.push(y(loc));
             coords.z.push(z(loc));
-
         }
     }
     return [coords, seq.join('')];

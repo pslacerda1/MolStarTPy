@@ -3,9 +3,17 @@
         "target": "esnext",
         "moduleResolution": "bundler", // ou "node"
         "jsx": "react-jsx",
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "outDir": "./dist",                  /* Redirect output structure to the 'dist' directory */
+        "rootDir": "./src",
+        "strict": true,
+        "skipLibCheck": true,
     },
     "include": [
         "src"
-    ]
+    ],
+    "exclude": [
+        "node_modules/",
+        "dist/"
+    ],
 }

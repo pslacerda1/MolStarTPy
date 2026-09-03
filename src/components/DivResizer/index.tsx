@@ -9,6 +9,8 @@ interface IDivResizerProps {
     bottom: ReactNode;
 }
 
+const DIV_RESIZER_STORAGE_KEY = 'div_resizer_log_history';
+
 export const DivResizer: React.FunctionComponent<IDivResizerProps> = ({
     title: initialTitle,
     max: initMax,
@@ -21,11 +23,13 @@ export const DivResizer: React.FunctionComponent<IDivResizerProps> = ({
 
     const [max, setMax] = useState<number>(initMax ?? 70);
     const [min, setMin] = useState<number>(initMin ?? 10);
-    const [height, setHeight] = useState<number>(80);
+    const [topHeight, setTopHeight] = useState<number>(() => {
+        const saved = localStorage.getItem(DIV_RESIZER_STORAGE_KEY);
+        return saved ? parseFloat(saved) : 80;
+    });
+
     const isDraggingRef = useRef<boolean>(false);
-
     const containerRef = useRef<HTMLDivElement>(null);
-
 
     // Start dragging
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -50,8 +54,7 @@ export const DivResizer: React.FunctionComponent<IDivResizerProps> = ({
 
         // Aplica a restrição de limites (clamp) entre min e max
         const clampedPercentage = Math.max(min, Math.min(max, rawPercentage));
-
-        setHeight(clampedPercentage);
+        setTopHeight(clampedPercentage);
     }, [min, max]);
 
     // Stops
@@ -59,6 +62,7 @@ export const DivResizer: React.FunctionComponent<IDivResizerProps> = ({
         if (isDraggingRef.current) {
             isDraggingRef.current = false;
             document.body.style.cursor = 'default'; // volta ao cursor normal
+            localStorage.setItem(DIV_RESIZER_STORAGE_KEY, topHeight.toString());
         }
     }, []);
 
@@ -76,24 +80,23 @@ export const DivResizer: React.FunctionComponent<IDivResizerProps> = ({
         };
     }, [handleMouseMove, handleMouseUp]);
 
-    const topHeight = height;
-    const bottomHeight = 100 - height;
+    const bottomHeight = 100 - topHeight;
 
     return <>
-            <div ref={containerRef} className="divresizer-container">
-                <div className='divresizer top' style={{ height: `${topHeight}%` }}>
-                    { topChild }
-                </div>
+        <div ref={containerRef} className="divresizer-container">
+            <div className='divresizer top' style={{ height: `${topHeight}%` }}>
+                {topChild}
+            </div>
 
-                <hr
-                    className='divresizer'
-                    title={ title }
-                    onMouseDown={handleMouseDown}
-                />
+            <hr
+                className='divresizer'
+                title={title}
+                onMouseDown={handleMouseDown}
+            />
 
-                <div className='divresizer bottom' style={{ height: `${bottomHeight}%` }}>
-                    { bottomChild }
-                </div>
+            <div className='divresizer bottom' style={{ height: `${bottomHeight}%` }}>
+                {bottomChild}
+            </div>
         </div>
     </>;
 };

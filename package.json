@@ -1,6 +1,7 @@
 {
   "name": "molstartpy",
   "type": "module",
+  "main": "dist/index.html",
   "devDependencies": {
     "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
@@ -13,16 +14,23 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "debug": "vite --debug",
+    "build": "tsc && vite build",
+    "dirt-build": "vite build",
+    "clean": "rimraf dist"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "comlink": "^4.4.2",
+    "error-stack-parser": "^2.1.4",
     "fp-ts": "^2.16.11",
     "itertools": "^2.7.1",
     "molstar": "^5.11.0",
     "monaco-editor": "^0.56.0",
     "pyodide": "^314.0.6",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "stacktrace-js": "^2.0.2",
+    "typescript": "^7.0.2"
   }
 }

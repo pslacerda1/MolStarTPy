@@ -11,9 +11,7 @@ import { PluginContext } from 'molstar/lib/mol-plugin/context'
 import { useEffect, useRef } from 'react'
 import 'molstar/lib/mol-plugin-ui/skin/light.scss'
 
-import { PythonEnvironmentProvider } from './components/PythonEnvironment'
-import './components/MolstarCollection'; // importante
-
+import './components/MolstarScripts/main'; // importante
 import './App.scss'
 
 
@@ -68,7 +66,5 @@ function Root() {
 }
 
 createRoot(document.getElementById('app')!).render(
-    <PythonEnvironmentProvider>
-        <Root />
-    </PythonEnvironmentProvider>
+    <Root />
 );

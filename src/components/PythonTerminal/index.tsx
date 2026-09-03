@@ -1,188 +1,144 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Editor, Monaco, OnMount } from '@monaco-editor/react';
-import { languages } from 'monaco-editor';
+import { Editor, OnMount } from '@monaco-editor/react';
+import { editor, KeyCode } from 'monaco-editor';
 
-import { usePythonEnvironment } from '../PythonEnvironment';
+import { PythonEnvironment } from '../PythonEnvironment/environment';
+import { TRANSFER_NULL } from '../PythonEnvironment/utils'
 import { DivResizer } from '../DivResizer';
+import { Logger } from '../../utils';
 
+const log = Logger();
 
-export const PythonTerminal: React.FunctionComponent = () => {
-    const { pyodide } = usePythonEnvironment();
-    const [editedCode, setEditedCode] = useState<string>('script01(["1BZL", "2JK6", "5SMJ"])');
+const LOG_STORAGE_KEY = 'python_terminal_log_history';
+const WELCOME_MESSAGE =
+    'Welcome! Type Python code below.'
+' Press Enter to execute and Ctrl+Enter to break lines.';
+
+export const PythonTerminal = () => {
+    const [editedCode, setEditedCode] = useState<string>('script01(["1BZL", "2JK6"])'); // script01(["1BZL", "2JK6", "5SMJ"])
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
-    const [logContent, setLogContent] = useState<string>('');
 
     const isExecutingRef = useRef<boolean>(false);
     const commandHistoryRef = useRef<string[]>([]);
-    const logEditorRef = useRef<Monaco | null>(null);
+    const logEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+    const codeEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
-    const handlelogEditorMount: OnMount = (logEditor: Monaco) => {
-        logEditorRef.current = logEditor;
-    };
-
-    // Atualiza editor com o novo conteúdo do log.
-    const updateLogContent = (newText: string) => {
-        setLogContent(newText);
-        if (logEditorRef.current) {
-            logEditorRef.current.setValue(newText);
-
-            // após atualizar o conteúdo, scrolla pra última linha
-            const lastLine = logEditorRef.current.getModel()?.getLineCount() || 1;
-            logEditorRef.current.revealLine(lastLine);
-        }
-    };
+    const python = PythonEnvironment('main');
+    const [pythonState, setPythonState] = useState<string>(python.state);
 
     useEffect(() => {
-        async function init() {
-            if (!pyodide) return;
-            try {
-                // Disponibiliza o módulo PythonTerminal no Pyodide nas variáveis globais
-                await pyodide.runPythonAsync(`
-                    from PythonTerminal import (
-                        introspect_members,
-                        introspect_globals,
-                    )
-                `);
-            } catch (err) {
-                console.error('Failed to initialize PythonTerminal.', err);
+        python.setup();
+        // python.configureStdout(log.info);
+        // python.configureStderr(log.error);
+        python.configureStderr(appendLog);
+        python.configureStdout(appendLog);
+
+        python.subscribeStateChanges((newState) => {
+            setPythonState(newState);
+            const codeEditor = codeEditorRef.current;
+            if (!codeEditor) return;
+
+            if (newState === 'WORKING') {
+                appendLog('');
+                appendLog(WELCOME_MESSAGE);
             }
+        });
+    }, []);
 
-            // Registro do provedor de IntelliSense
-            languages.registerCompletionItemProvider('python', {
-                provideCompletionItems: async (model, position) => {
-                    const suggestions: languages.CompletionItem[] = [];
-                    try {
-                        // 1. Palavra atual sob o cursor
-                        const word = model.getWordUntilPosition(position);
+    // 1. Inserção instantânea de texto puro no Monaco + LocalStorage
+    const appendLog = (text: string) => {
+        if (!text) return;
+        const lineToAppend = text.endsWith('\n') ? text : text + '\n';
 
-                        // 2. Texto da linha até o início da palavra atual
-                        const textBeforeWord = model.getValueInRange({
-                            startLineNumber: position.lineNumber,
-                            startColumn: 1,
-                            endLineNumber: position.lineNumber,
-                            endColumn: word.startColumn,
-                        }).trim();
+        // Persistência imediata em texto puro no localStorage
+        const currentSaved = localStorage.getItem(LOG_STORAGE_KEY) || '';
+        const updatedLog = currentSaved + lineToAppend;
+        localStorage.setItem(LOG_STORAGE_KEY, updatedLog);
 
-                        interface Token {
-                            name: string;
-                            kind: 'Type' | 'Callable' | 'Object';
-                        }
-                        let tokens: Token[] = [];
+        // Atualização imediata no editor do Monaco (sem re-renderizar o React)
+        const editor = logEditorRef.current;
+        if (editor) {
+            const model = editor.getModel();
+            if (model) {
+                const lastLineNumber = model.getLineCount();
+                const lastColumn = model.getLineMaxColumn(lastLineNumber);
 
-                        // 3. Se o texto antes da palavra termina com ponto (ex: "sys." ou "my_obj.")
-                        if (textBeforeWord.endsWith('.')) {
-                            const identifier = textBeforeWord.slice(0, -1).trim();
+                // Aplica a edição no final do documento
+                model.applyEdits([
+                    {
+                        range: {
+                            startLineNumber: lastLineNumber,
+                            startColumn: lastColumn,
+                            endLineNumber: lastLineNumber,
+                            endColumn: lastColumn,
+                        },
+                        text: lineToAppend,
+                        forceMoveMarkers: true,
+                    },
+                ]);
 
-                            if (identifier) {
-                                const members = await pyodide.runPythonAsync(`introspect_members(${identifier})`);
-                                tokens = members.toJs({ dict_converter: Object.fromEntries });
-                                members.destroy();
-                            }
-                        } else {
-                            // 4. Digitação padrão / espaço / vírgula -> busca globais
-                            const pyGlobals = await pyodide.runPythonAsync(`introspect_globals()`);
-                            tokens = pyGlobals.toJs({ dict_converter: Object.fromEntries });
-                            pyGlobals.destroy();
-                        }
-
-                        const range = {
-                            startLineNumber: position.lineNumber,
-                            endLineNumber: position.lineNumber,
-                            startColumn: word.startColumn,
-                            endColumn: word.endColumn,
-                        };
-
-                        // Registra tokens como sugestões
-                        for (const token of tokens) {
-                            let kind: languages.CompletionItemKind;
-                            switch (token.kind) {
-                                case 'Type':
-                                    kind = languages.CompletionItemKind.Class;
-                                    break;
-                                case 'Callable':
-                                    kind = languages.CompletionItemKind.Function;
-                                    break;
-                                default:
-                                    kind = languages.CompletionItemKind.Variable;
-                                    break;
-                            }
-                            suggestions.push({
-                                label: token.name,
-                                kind: kind,
-                                insertText: token.name,
-                                range: range,
-                            });
-                        }
-                    } catch (err) {
-                        console.error("Failed introspecting.", err);
-                    }
-                    return { suggestions };
-                }
-            });
+                // Rola suavemente para a última linha
+                editor.revealLine(model.getLineCount());
+            }
         }
-        init();
-    }, [pyodide]);
+    };
 
+    // 2. Montagem do Editor de Log: carrega o texto acumulado do LocalStorage
+    const handlelogEditorMount: OnMount = (logEditor) => {
+        logEditorRef.current = logEditor;
 
-    // Cuida da execução do REPL.
-    const handleRun = async (codeEditor: Monaco) => {
+        let initialContent = localStorage.getItem(LOG_STORAGE_KEY) || '';
+        if (initialContent.length > 999999) {
+            log.warn('Log content is too large, truncating to last 1 million characters.');
+            initialContent = initialContent.slice(-999999);
+            localStorage.setItem(LOG_STORAGE_KEY, initialContent);
+        }
+
+        if (initialContent) {
+            logEditor.setValue(initialContent);
+            const lastLine = logEditor.getModel()?.getLineCount() || 1;
+            logEditor.revealLine(lastLine);
+        }
+    };
+
+    // Execução do REPL
+    const handleRun = async (codeEditor: editor.IStandaloneCodeEditor) => {
         const cmd = codeEditor?.getValue();
-        if (!pyodide || !codeEditor || !cmd || !cmd.trim())
-            return;
-        isExecutingRef.current = true;
+        if (!codeEditor || !cmd || !cmd.trim()) return;
 
-        // adiciona comando ao histórico
+        isExecutingRef.current = true;
+        codeEditor.updateOptions({ readOnly: true });
+
+        // Guarda o comando executado no histórico de setas UP/DOWN
         commandHistoryRef.current.push(cmd);
         setHistoryIndex(-1);
 
-        // limpa campo de digitação
+        // Limpa o campo de input
         setEditedCode('');
         codeEditor.setValue('');
 
-        // cuida do log...
-        // lê e escreve várias vezes...
-        // só não é tão lento pq é na memória
-        let log = '';
-        const readLog = () => {
-            try {
-                log = pyodide.FS.readFile('/tmp/console.log', { encoding: 'utf8' });
-            } catch (e) { }
-        };
-        const appendLog = (text: string) => {
-            readLog();
-            pyodide.FS.writeFile('/tmp/console.log', log + text);
-        };
+        // Mostra o comando digitado
+        appendLog(`>>> ${cmd.trim()}`);
+
         try {
-            // efetivamente executa o código
-            readLog();
-            appendLog(`>>> ${cmd.trim()}\n`);
-            const result = await pyodide.runPythonAsync(cmd);
-
-            // salva eventuais resultado
-            if (result !== undefined) {
-                const msg = String(result);
-                readLog();
-                appendLog(`${msg}\n`);
-            }
-
-            // salva log em caso de erro
+            await python.runCodeOnWorker(cmd, {
+                globals: TRANSFER_NULL,
+                printRepr: true
+            });
         } catch (err: any) {
-            const msg = err.toString();
-            readLog();
-            appendLog(`${msg}\n`);
-        }
-        finally {
-            // exibe tudo na tela
-            readLog();
-            updateLogContent(log); // check!
+            // Mostra a mensagem de erro caso quebre
+            appendLog(err.toString());
+        } finally {
             isExecutingRef.current = false;
+            codeEditor.updateOptions({ readOnly: false });
         }
     };
 
+    const handleCodeEditorMount: OnMount = (codeEditor) => {
+        codeEditorRef.current = codeEditor;
 
-    const handleCodeEditorMount: OnMount = (codeEditor, monaco) => {
         // Enter puro dispara a execução
-        codeEditor.addCommand(monaco.KeyCode.Enter, () => {
+        codeEditor.addCommand(KeyCode.Enter, () => {
             if (isExecutingRef.current)
                 return;
             handleRun(codeEditor);
@@ -193,7 +149,7 @@ export const PythonTerminal: React.FunctionComponent = () => {
         codeEditor.addAction({
             id: 'history-prev-command',
             label: 'Previous History Command',
-            keybindings: [monaco.KeyCode.UpArrow],
+            keybindings: [KeyCode.UpArrow],
             precondition: '!suggestWidgetVisible',
             run: () => {
                 const history = commandHistoryRef.current;
@@ -214,7 +170,7 @@ export const PythonTerminal: React.FunctionComponent = () => {
         codeEditor.addAction({
             id: 'history-next-command',
             label: 'Next History Command',
-            keybindings: [monaco.KeyCode.DownArrow],
+            keybindings: [KeyCode.DownArrow],
             precondition: '!suggestWidgetVisible',
             run: () => {
                 const history = commandHistoryRef.current;
@@ -236,9 +192,11 @@ export const PythonTerminal: React.FunctionComponent = () => {
         });
     };
 
-    if (!pyodide) {
+    if (python.state != 'WORKING') {
         return <div className=''>
-            Loading Python Environment & IntelliSense...
+            Loading Python Environment <b>:-]</b>
+            <br />
+            It may be slow to warm up...
         </div>;
     }
     return <>

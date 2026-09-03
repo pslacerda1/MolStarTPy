@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import path from 'path';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
+
 
 export default defineConfig({
     plugins: [
@@ -15,6 +17,18 @@ export default defineConfig({
                 process: true,
             },
         }),
+        viteStaticCopy({
+            targets: [
+                {
+                    src: 'node_modules/pyodide/*',
+                    dest: 'public/vendor/pyodide'
+                },
+                {
+                    src: 'node_modules/molstar/build/viewer/*',
+                    dest: 'public/vendor/molstar'
+                }
+            ]
+        })
     ],
     resolve: {
         alias: {
@@ -25,15 +39,12 @@ export default defineConfig({
     server: {
         port: 1337,
         open: true,
+        sourcemapIgnoreList: false, // Garante que erros do node_modules não ocultem seu código
     },
     build: {
         outDir: 'dist',
         sourcemap: true,
         target: 'esnext', // Suporta WebAssembly top-level await se necessário
-    },
-    define: {
-        // Evita exceções de 'global is not defined'
-        global: 'window',
     },
     optimizeDeps: {
         // Evita pré-bundling incorreto das partes pesadas do Mol*

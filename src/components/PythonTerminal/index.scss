@@ -1,0 +1,10 @@
+.monaco-placeholder {
+    font-style: italic;
+    color: #6e7681 !important; /* Cor suave para o tema escuro vs-dark */
+    pointer-events: none;
+    user-select: none;
+}
+
+.monaco-placeholder::before {
+    content: attr(data-placeholder);
+}
