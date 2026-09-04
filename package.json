@@ -17,13 +17,15 @@
     "debug": "vite --debug",
     "build": "tsc && vite build",
     "dirt-build": "vite build",
-    "clean": "rimraf dist"
+    "clean": "rm -rf dist",
+    "publish": "rm -rf dist && tsc && vite build && gh-pages --nojekyll -f -d dist"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "comlink": "^4.4.2",
     "error-stack-parser": "^2.1.4",
     "fp-ts": "^2.16.11",
+    "gh-pages": "^6.3.0",
     "itertools": "^2.7.1",
     "molstar": "^5.11.0",
     "monaco-editor": "^0.56.0",
