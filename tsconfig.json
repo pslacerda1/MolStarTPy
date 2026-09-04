@@ -1,10 +1,10 @@
 {
     "compilerOptions": {
         "target": "esnext",
-        "moduleResolution": "bundler", // ou "node"
+        "moduleResolution": "bundler",
         "jsx": "react-jsx",
         "esModuleInterop": true,
-        "outDir": "./dist",                  /* Redirect output structure to the 'dist' directory */
+        "outDir": "./dist",
         "rootDir": "./src",
         "strict": true,
         "skipLibCheck": true,

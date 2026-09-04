@@ -85,6 +85,7 @@ const pythonWorkerApi = {
         let pyGlobals: PyProxy;
         let rawResult: any;
         try {
+            log.debug('Running code string on worker');
             const options_ = options?.data;
             const globals = options_?.globals;
             if (globals?.data) {
@@ -97,9 +98,11 @@ const pythonWorkerApi = {
             }
 
             if (options_?.printRepr && rawResult !== undefined) {
-                pyodide.globals.set('_', rawResult);
-                await pyodide.runPythonAsync('print(_)');
-                pyodide.globals.delete('_');
+                const pyRawResult = pyodide.toPy(rawResult);
+                pyodide.globals.set('__rv', pyRawResult);
+                await pyodide.runPythonAsync('print(__rv)');
+                pyodide.globals.delete('__rv');
+                maybeDestroy(pyRawResult);
             }
             return Comlink.transfer(...toTransfer(rawResult))
         } catch (err) {
@@ -184,8 +187,8 @@ const pythonWorkerApi = {
                 rawResult = await callback(
                     Comlink.transfer(...toTransfer(args))
                 );
-                const [{ data }] = toTransfer(rawResult.data);
-                return data;
+                return rawResult.data;
+
             } catch (err) {
                 log.error(`Error on main thread function ${fnName}`, err);
                 throw err;

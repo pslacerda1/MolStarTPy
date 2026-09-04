@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Editor, OnMount } from '@monaco-editor/react';
-import { editor, KeyCode } from 'monaco-editor';
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
+import 'monaco-editor/esm/vs/basic-languages/python/python.contribution';
+
 
 import { PythonEnvironment } from '../PythonEnvironment/environment';
 import { TRANSFER_NULL } from '../PythonEnvironment/utils'
 import { DivResizer } from '../DivResizer';
 import { Logger } from '../../utils';
+
 
 const log = Logger();
 
@@ -20,16 +23,14 @@ export const PythonTerminal = () => {
 
     const isExecutingRef = useRef<boolean>(false);
     const commandHistoryRef = useRef<string[]>([]);
-    const logEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-    const codeEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+    const logEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+    const codeEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
     const python = PythonEnvironment('main');
     const [pythonState, setPythonState] = useState<string>(python.state);
 
     useEffect(() => {
         python.setup();
-        // python.configureStdout(log.info);
-        // python.configureStderr(log.error);
         python.configureStderr(appendLog);
         python.configureStdout(appendLog);
 
@@ -102,7 +103,7 @@ export const PythonTerminal = () => {
     };
 
     // Execução do REPL
-    const handleRun = async (codeEditor: editor.IStandaloneCodeEditor) => {
+    const handleRun = async (codeEditor: monaco.editor.IStandaloneCodeEditor) => {
         const cmd = codeEditor?.getValue();
         if (!codeEditor || !cmd || !cmd.trim()) return;
 
@@ -138,7 +139,7 @@ export const PythonTerminal = () => {
         codeEditorRef.current = codeEditor;
 
         // Enter puro dispara a execução
-        codeEditor.addCommand(KeyCode.Enter, () => {
+        codeEditor.addCommand(monaco.KeyCode.Enter, () => {
             if (isExecutingRef.current)
                 return;
             handleRun(codeEditor);
@@ -149,7 +150,7 @@ export const PythonTerminal = () => {
         codeEditor.addAction({
             id: 'history-prev-command',
             label: 'Previous History Command',
-            keybindings: [KeyCode.UpArrow],
+            keybindings: [monaco.KeyCode.UpArrow],
             precondition: '!suggestWidgetVisible',
             run: () => {
                 const history = commandHistoryRef.current;
@@ -170,7 +171,7 @@ export const PythonTerminal = () => {
         codeEditor.addAction({
             id: 'history-next-command',
             label: 'Next History Command',
-            keybindings: [KeyCode.DownArrow],
+            keybindings: [monaco.KeyCode.DownArrow],
             precondition: '!suggestWidgetVisible',
             run: () => {
                 const history = commandHistoryRef.current;
