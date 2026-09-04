@@ -61,9 +61,11 @@ export function PythonEnvironment(id?: string): IPythonEnvironment {
                 fnName,
                 Comlink.proxy(async (args: TransferObject<any[]>) => {
                     log.debug(`Remote called main thread function ${fnName}.`);
-                    return Comlink.transfer(
+                    const { data } = Comlink.transfer(
                         ...toTransfer(await fn(...args.data))
                     );
+                    return data;
+
                 })
             );
         }
@@ -131,13 +133,12 @@ export function PythonEnvironment(id?: string): IPythonEnvironment {
         moduleName?: string,
     ) {
         const worker = getWorker();
-        const rawResult = await worker.callWorkerFunction(
+        const { data } = await worker.callWorkerFunction(
             functionName,
             Comlink.transfer(...toTransfer(args)),
             Comlink.transfer(...toTransfer(kwargs)),
             moduleName
         );
-        const [{ data }] = toTransfer(rawResult.data);
         return data;
     }
 

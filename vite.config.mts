@@ -5,55 +5,59 @@ import path from 'path';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 
-export default defineConfig({
-    plugins: [
-        react(),
-        nodePolyfills({
-            // Garante suporte a Buffer e process exigidos pelo Mol*
-            include: ['buffer', 'process', 'stream', 'util'],
-            globals: {
-                Buffer: true,
-                global: true,
-                process: true,
-            },
-        }),
-        viteStaticCopy({
-            targets: [
-                {
-                    src: 'node_modules/pyodide/*',
-                    dest: 'public/vendor/pyodide'
+export default defineConfig(({ command, mode }) => {
+    const isGithubDeploy = process.env.GITHUB_ACTIONS === 'true';
+    return {
+        base: isGithubDeploy ? '/MolStarTPy/' : '/',
+        plugins: [
+            react(),
+            nodePolyfills({
+                // Garante suporte a Buffer e process exigidos pelo Mol*
+                include: ['buffer', 'process', 'stream', 'util'],
+                globals: {
+                    Buffer: true,
+                    global: true,
+                    process: true,
                 },
-                {
-                    src: 'node_modules/molstar/build/viewer/*',
-                    dest: 'public/vendor/molstar'
-                }
-            ]
-        })
-    ],
-    resolve: {
-        alias: {
-            // Ajuste os aliases se o seu código usa caminhos relativos ou absolutos
-            '@': path.resolve(__dirname, './src'),
+            }),
+            viteStaticCopy({
+                targets: [
+                    {
+                        src: 'node_modules/pyodide/*',
+                        dest: 'public/vendor/pyodide'
+                    },
+                    {
+                        src: 'node_modules/molstar/build/viewer/*',
+                        dest: 'public/vendor/molstar'
+                    }
+                ]
+            })
+        ],
+        resolve: {
+            alias: {
+                // Ajuste os aliases se o seu código usa caminhos relativos ou absolutos
+                '@': path.resolve(__dirname, './src'),
+            },
         },
-    },
-    server: {
-        port: 1337,
-        open: true,
-        sourcemapIgnoreList: false, // Garante que erros do node_modules não ocultem seu código
-    },
-    build: {
-        outDir: 'dist',
-        sourcemap: true,
-        target: 'esnext', // Suporta WebAssembly top-level await se necessário
-    },
-    optimizeDeps: {
-        // Evita pré-bundling incorreto das partes pesadas do Mol*
-        include: ['molstar', 'fp-ts', 'fp-ts/es6/Either'],
-    },
-    // Configuração explícita para Web Workers
-    worker: {
-        format: 'es', // Garante suporte a imports ESM dentro dos Workers
-    },
-    // 2. Recursos de assets e suporte a WASM
-    assetsInclude: ['**/*.wasm', '**/*.py'], // Garante que arquivos .wasm sejam tratados como assets estáticos
+        server: {
+            port: 1337,
+            open: true,
+            sourcemapIgnoreList: false, // Garante que erros do node_modules não ocultem seu código
+        },
+        build: {
+            outDir: 'dist',
+            sourcemap: true,
+            target: 'esnext', // Suporta WebAssembly top-level await se necessário
+        },
+        optimizeDeps: {
+            // Evita pré-bundling incorreto das partes pesadas do Mol*
+            include: ['molstar', 'fp-ts', 'fp-ts/es6/Either'],
+        },
+        // Configuração explícita para Web Workers
+        worker: {
+            format: 'es', // Garante suporte a imports ESM dentro dos Workers
+        },
+        // Recursos de assets e suporte a WASM
+        assetsInclude: ['**/*.wasm', '**/*.py'], // Garante que arquivos .wasm sejam tratados como assets estáticos
+    }
 });

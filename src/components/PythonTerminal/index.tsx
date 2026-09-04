@@ -15,7 +15,7 @@ const WELCOME_MESSAGE =
 ' Press Enter to execute and Ctrl+Enter to break lines.';
 
 export const PythonTerminal = () => {
-    const [editedCode, setEditedCode] = useState<string>('script01(["1BZL", "2JK6"])'); // script01(["1BZL", "2JK6", "5SMJ"])
+    const [editedCode, setEditedCode] = useState<string>('script01(["1BZL", "2JK6", "5SMJ"])');
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
     const isExecutingRef = useRef<boolean>(false);

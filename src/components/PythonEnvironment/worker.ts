@@ -154,9 +154,9 @@ const pythonWorkerApi = {
         try {
             if (kwargs?.data !== undefined) {
                 pyKwargs = pyodide.toPy(kwargs.data);
-                results = await fn.call({ kwargs: true }, ...args.data, pyKwargs);
+                results = await fn.callKwargs(...args.data, pyKwargs);
             } else {
-                results = await fn.call({ kwargs: false }, ...args.data);
+                results = await fn.call({}, ...args.data);
             }
             return Comlink.transfer(...toTransfer(results));
         } finally {
@@ -203,9 +203,9 @@ Comlink.expose(pythonWorkerApi);
 async function newPyodide() {
 
     const LOAD_PACKAGE_WHEELS: string[] = [
-        'micropip',
-        'numpy',
-        'scipy',
+        '/pyodide/micropip-0.11.1-py3-none-any.whl',
+        '/pyodide/numpy-2.4.6-cp314-cp314-pyemscripten_2026_0_wasm32.whl',
+        '/pyodide/scipy-1.18.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl',
         '/pyodide/tmtools-0.3.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl'
     ];
     const url = new URL(location.toString()).origin
@@ -227,7 +227,7 @@ async function newPyodide() {
             },
         });
         pyodide.setDebug(true);
-        log.debug('Registering Comlink');
+        // log.debug('Registering Comlink');
         // pyodide.registerComlink(pythonWorkerApi);
 
         const load_wheels = LOAD_PACKAGE_WHEELS.map(pkg =>
@@ -238,7 +238,7 @@ async function newPyodide() {
         await pyodide.loadPackage(load_wheels, {
             messageCallback: log.debug,
             errorCallback: log.error,
-            checkIntegrity: true,
+            checkIntegrity: false,
         });
 
         const tmtools = await pyodide.pyimport('tmtools');
