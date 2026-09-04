@@ -10,7 +10,7 @@ import {
     StdoutCallback,
     TransferObject,
 } from './types';
-import { Logger } from '@/utils';
+import { Logger } from '../../utils';
 import { toTransfer, maybeDestroy } from './utils.ts';
 
 
