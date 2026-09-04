@@ -206,13 +206,13 @@ Comlink.expose(pythonWorkerApi);
 async function newPyodide() {
 
     const LOAD_PACKAGE_WHEELS: string[] = [
-        '/pyodide/micropip-0.11.1-py3-none-any.whl',
-        '/pyodide/numpy-2.4.6-cp314-cp314-pyemscripten_2026_0_wasm32.whl',
-        '/pyodide/scipy-1.18.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl',
-        '/pyodide/tmtools-0.3.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl'
+        'micropip-0.11.1-py3-none-any.whl',
+        'numpy-2.4.6-cp314-cp314-pyemscripten_2026_0_wasm32.whl',
+        'scipy-1.18.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl',
+        'tmtools-0.3.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl'
     ];
-    const url = new URL(location.toString()).origin
-    const pyodideIndexUrl = new URL('/pyodide/', url).toString();
+    const url = location.toString();
+    const pyodideIndexUrl = url + '/pyodide/'
 
     try {
         log.debug('Initializing Pyodide...');
