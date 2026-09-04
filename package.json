@@ -18,8 +18,7 @@
     "debug": "vite --debug",
     "build": "tsc && vite build",
     "dirt-build": "vite build",
-    "clean": "rm -rf dist",
-    "publish": "rm -rf dist && tsc && vite build && gh-pages --nojekyll -f -d dist"
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

@@ -10,9 +10,8 @@ import {
     StdoutCallback,
     TransferObject,
 } from './types';
-import { Logger } from '../../utils';
-import { toTransfer, maybeDestroy } from './utils';
-
+import { Logger } from '@/utils';
+import { toTransfer, maybeDestroy } from './utils.ts';
 
 
 const PYTHON_MODULES = import.meta.glob('/src/components/*/*.py', {
@@ -205,14 +204,17 @@ Comlink.expose(pythonWorkerApi);
 
 async function newPyodide() {
 
+    const url = new URL(location.toString());
+    const pyodideIndexUrl = url.origin + '/pyodide'
+    log.debug('pyodideIndexUrl', pyodideIndexUrl);
+
     const LOAD_PACKAGE_WHEELS: string[] = [
-        'micropip-0.11.1-py3-none-any.whl',
-        'numpy-2.4.6-cp314-cp314-pyemscripten_2026_0_wasm32.whl',
-        'scipy-1.18.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl',
-        'tmtools-0.3.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl'
+        'micropip',
+        'numpy',
+        'scipy',
+        pyodideIndexUrl + '/tmtools-0.3.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl'
     ];
-    const url = location.toString();
-    const pyodideIndexUrl = url + '/pyodide/'
+
 
     try {
         log.debug('Initializing Pyodide...');

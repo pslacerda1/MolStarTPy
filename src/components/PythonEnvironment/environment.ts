@@ -11,7 +11,6 @@ import {
 import { type PythonWorkerApi } from './worker';
 import * as Comlink from 'comlink';
 import { Logger } from '../../utils';
-import { Int } from 'molstar/lib/mol-data';
 import { toTransfer } from './utils';
 
 const log = Logger();
