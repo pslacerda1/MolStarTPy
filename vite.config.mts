@@ -5,9 +5,6 @@ export default defineConfig({
     plugins: [
         react(),
     ],
-    base: process.env.GITHUB_ACTIONS === 'true'
-        ? '/MolStarTPy/'
-        : '/',
     server: {
         port: 1337,
         open: true,
