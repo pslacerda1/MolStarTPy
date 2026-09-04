@@ -1,13 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
-import path from 'path'
 
 
 export default defineConfig({
     plugins: [
         react(),
     ],
-    base: './',
+    base: '/MolStarTpy/',
     server: {
         port: 1337,
         open: true,
@@ -16,12 +15,11 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         sourcemap: true,
-        target: 'esnext'
+        target: 'esnext',
+        minify: false,
+        emptyOutDir: true,
     },
     resolve: {
         conditions: ['browser'],
-        alias: {
-            '@': path.resolve(__dirname, 'src'),
-        },
     },
 });

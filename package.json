@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "vite",
     "debug": "vite --debug",
-    "build": "tsc && vite build",
+    "build": "rm -rf dist && tsc && vite build && mkdir dist/MolStarTpy && mv dist/* dist/MolStarTpy || true",
     "dirt-build": "vite build",
     "clean": "rm -rf dist"
   },

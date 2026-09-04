@@ -11,7 +11,7 @@ import {
     TransferObject,
 } from './types';
 import { Logger } from '../../utils';
-import { toTransfer, maybeDestroy } from './utils.ts';
+import { toTransfer, maybeDestroy } from './utils';
 
 
 const PYTHON_MODULES = import.meta.glob('/src/components/*/*.py', {
@@ -205,7 +205,10 @@ Comlink.expose(pythonWorkerApi);
 async function newPyodide() {
 
     const url = new URL(location.toString());
-    const pyodideIndexUrl = url.origin + '/pyodide'
+    const pyodideIndexUrl =
+        url.protocol + '//' + url.host
+        + import.meta.env.BASE_URL
+        + '/pyodide';
     log.debug('pyodideIndexUrl', pyodideIndexUrl);
 
     const LOAD_PACKAGE_WHEELS: string[] = [
