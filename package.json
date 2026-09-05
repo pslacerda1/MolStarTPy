@@ -17,8 +17,8 @@
     "dev": "vite",
     "debug": "vite --debug",
     "build": "rm -rf dist && tsc && vite build && mkdir dist/MolStarTpy && mv dist/* dist/MolStarTpy || true",
-    "dirt-build": "vite build",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "publish": "gh-pages -d dist/MolStarTpy --nojekyll --no-history"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

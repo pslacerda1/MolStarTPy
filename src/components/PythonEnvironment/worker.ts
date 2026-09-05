@@ -207,17 +207,15 @@ async function newPyodide() {
     const url = new URL(location.toString());
     const pyodideIndexUrl =
         url.protocol + '//' + url.host
-        + import.meta.env.BASE_URL
+        + '/MolStarTpy'
         + '/pyodide';
-    log.debug('pyodideIndexUrl', pyodideIndexUrl);
 
-    const LOAD_PACKAGE_WHEELS: string[] = [
+    const PYTHON_WHEELS: string[] = [
         'micropip',
         'numpy',
         'scipy',
         pyodideIndexUrl + '/tmtools-0.3.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl'
     ];
-
 
     try {
         log.debug('Initializing Pyodide...');
@@ -234,23 +232,14 @@ async function newPyodide() {
                 }
             },
         });
-        pyodide.setDebug(true);
-        // log.debug('Registering Comlink');
-        // pyodide.registerComlink(pythonWorkerApi);
+        if (import.meta.env.DEV)
+            pyodide.setDebug(true);
 
-        const load_wheels = LOAD_PACKAGE_WHEELS.map(pkg =>
-            pkg.indexOf('/') > -1
-                ? new URL(pkg, location.href).href
-                : pkg
-        );
-        await pyodide.loadPackage(load_wheels, {
+        await pyodide.loadPackage(PYTHON_WHEELS, {
             messageCallback: log.debug,
             errorCallback: log.error,
             checkIntegrity: false,
         });
-
-        const tmtools = await pyodide.pyimport('tmtools');
-        const numpy = await pyodide.pyimport('numpy');
 
         log.debug('Load Python modules at component level.');
         const modulesRoot = '/python-environment';
