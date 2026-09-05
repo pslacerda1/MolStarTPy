@@ -1,6 +1,8 @@
 # molstartpy
 ## Pyodide+React+Molstar
 
+https://pslacerda1.github.io/MolStarTpy/
+
 Mol* Python integrated terminal with some functions:
 
 * `loadPdb(pdbId)`: load PDB models.
